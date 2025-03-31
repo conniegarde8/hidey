@@ -1,62 +1,87 @@
-.message-hider-panel { /* Matches the className added in JS */
-    position: fixed;
-    right: 10px;
-    top: 200px;
-    width: 150px;
-    height: auto; /* Consider auto height unless fixed height is crucial */
-    max-height: 200px; /* Optional: Limit max height */
-    background-color: #f0f0f0;
-    border: 1px solid #ccc;
+/* General panel styling */
+#hide-helper-panel {
     padding: 10px;
-    z-index: 1000;
-    overflow-y: auto; /* Allow scrolling if content overflows */
-    font-size: 12px;
+    border-radius: 5px;
+    margin-bottom: 15px; /* Add space below the panel */
 }
 
-/* *** MODIFIED: Added .hide-helper-section to apply margin *** */
-.hide-floors,
-.regex-hide,
+/* Panel heading */
+#hide-helper-panel h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    border-bottom: 1px solid var(--secondary-color); /* Use theme variable */
+    padding-bottom: 5px;
+}
+
+/* Section for input and button */
 .hide-helper-section {
-    margin-bottom: 5px;
+    display: flex;
+    align-items: center; /* Align items vertically */
+    flex-wrap: wrap; /* Allow items to wrap on smaller screens */
+    gap: 10px; /* Add space between items */
+    margin-bottom: 10px; /* Space below the input section */
 }
 
-/* Matches the h3 tag used in JS */
-.message-hider-panel h3 { /* Specificity increased slightly */
-    margin: 0 0 5px 0;
-    font-size: 14px;
+/* Styling for inline settings items like in core ST */
+.inline-settings-item {
+    display: flex;
+    flex-wrap: wrap; /* Allow wrapping */
+    align-items: center; /* Vertically align items */
+    gap: 10px; /* Space between elements within the item */
+    margin-bottom: 10px; /* Space below each setting item */
 }
 
-.message-hider-panel input[type="number"],
-.message-hider-panel input[type="text"] { /* Specificity increased slightly */
-    width: 40px;
-    margin: 2px 0;
-    padding: 2px;
-    box-sizing: border-box; /* Good practice for consistent sizing */
+.inline-setting {
+    display: flex;
+    align-items: center;
+    gap: 5px; /* Space between label and input/button */
 }
 
-/* Applies to all buttons within the panel */
-.message-hider-panel button { /* Specificity increased slightly */
-    padding: 2px 5px;
-    margin: 2px 0;
-    font-size: 10px;
-    cursor: pointer; /* Add pointer cursor for better UX */
+/* Label styling */
+#hide-helper-panel label {
+    font-weight: bold;
+    margin-right: 5px; /* Space between label and input */
 }
 
-/* Styles the label within the panel */
-.message-hider-panel label { /* Specificity increased slightly */
-    font-size: 10px;
-    display: inline-block; /* Ensures label and input align well */
-    margin-right: 5px; /* Add some space between label and input */
+/* Input field styling */
+#hide-last-n {
+    padding: 5px 8px;
+    border: 1px solid var(--input-border-color); /* Use theme variable */
+    border-radius: 4px;
+    background-color: var(--input-bg-color); /* Use theme variable */
+    color: var(--text-color); /* Use theme variable */
+    max-width: 80px; /* Limit width */
+    text-align: right;
 }
 
-/* Optional: Style for the button container if needed */
-.hide-helper-buttons {
-    margin-top: 5px; /* Add some space above the button */
+/* Apply button - uses existing .menu_button class from ST */
+#hide-apply-btn {
+    /* Inherits styling from .menu_button */
+    /* Add specific overrides if needed */
+    padding: 6px 12px; /* Adjust padding if needed */
 }
 
-/* Optional: Style specifically for the save button if desired */
-#hide-save-settings-btn {
-    display: block; /* Make save button take full width */
-    width: 100%;
-    margin-top: 10px; /* Add more space above save button */
+/* Display for current chat setting */
+#hide-helper-panel p {
+    margin: 5px 0; /* Adjust vertical margin */
+    color: var(--text-color); /* Use theme variable */
+}
+
+#current-chat-hide-setting-display {
+    font-weight: bold;
+    color: var(--primary-color); /* Use theme highlight color */
+    margin-left: 5px; /* Space before the value */
+}
+
+/* Horizontal rule styling */
+#hide-helper-panel hr.sysHR {
+    border: none;
+    border-top: 1px solid var(--secondary-color); /* Use theme variable */
+    margin-top: 15px;
+    margin-bottom: 10px;
+}
+
+/* Adjustments for inline button placement */
+.inline-setting.inline-button {
+    margin-left: auto; /* Push button to the right if needed in flex context, depends on parent layout */
 }
