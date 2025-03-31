@@ -1,0 +1,38 @@
+.message-hider-panel {
+    position: fixed;
+    right: 10px;
+    top: 200px;
+    width: 150px;
+    height: 80px;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    padding: 10px;
+    z-index: 1000;
+    overflow-y: auto; /* Allow scrolling if content overflows */
+    font-size: 12px;
+}
+
+.hide-floors, .regex-hide {
+    margin-bottom: 5px;
+}
+
+h3 {
+    margin: 0 0 5px 0;
+    font-size: 14px;
+}
+
+input[type="number"], input[type="text"] {
+    width: 40px;
+    margin: 2px 0;
+    padding: 2px;
+}
+
+button {
+    padding: 2px 5px;
+    margin: 2px 0;
+    font-size: 10px;
+}
+
+label {
+    font-size: 10px;
+}
