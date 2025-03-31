@@ -1,137 +1,167 @@
-import { extension_settings, loadExtensionSettings } from "../../../extensions.js";
-import { saveSettingsDebounced, eventSource, event_types } from "../../../../script.js";
-import { getContext } from "../../../extensions.js";
-import { hideChatMessageRange } from "../../../chats.js";
+import { extension_settings } from "../../../extensions.js";
+import { saveSettingsDebounced, eventSource, event_types, getContext, chat_metadata, updateChatMetadata } from "../../../../script.js";
+import { hideChatMessageRange } from "../../../chat-logic.js"; // Adjust path if needed
+import { debounce } from "../../../utils.js"; // Adjust path if needed
 
 const extensionName = "hide-helper";
-const defaultSettings = {
+const metadataKey = 'hideHelperSettings';
+
+const defaultChatSettings = {
     hideLastN: 0,
-    lastAppliedSettings: null
 };
 
-// Initialize extension settings
 function loadSettings() {
     extension_settings[extensionName] = extension_settings[extensionName] || {};
-    if (Object.keys(extension_settings[extensionName]).length === 0) {
-        Object.assign(extension_settings[extensionName], defaultSettings);
-    }
 }
 
-// Create UI panel
 function createUI() {
-    const hideHelperPanel = document.createElement('div');
-    hideHelperPanel.id = 'hide-helper-panel'; // Keep the ID for potential specific targeting
-    hideHelperPanel.className = 'message-hider-panel'; // *** MODIFIED: Add class to match CSS ***
-    hideHelperPanel.innerHTML = `
-        <h3>隐藏助手</h3> {/* *** MODIFIED: Changed h4 to h3 to match CSS *** */}
-        <div class="hide-helper-section"> {/* This class now matches the modified CSS rule */}
-            <label for="hide-last-n">隐藏楼层:</label>
-            <input type="number" id="hide-last-n" min="0" placeholder="隐藏最后N层之前的消息">
-            <div class="hide-helper-buttons">
-                <button id="hide-apply-btn">应用</button>
-            </div>
-        </div>
-        <button class="save-settings-btn" id="hide-save-settings-btn">保存当前设置</button>
-    `;
-    document.body.appendChild(hideHelperPanel);
+    let hideHelperPanel = document.getElementById('hide-helper-panel');
+    if (hideHelperPanel) {
+        console.log("Hide Helper Panel already exists.");
+        return;
+    }
 
-    // Setup event listeners
+    hideHelperPanel = document.createElement('div');
+    hideHelperPanel.id = 'hide-helper-panel';
+    hideHelperPanel.classList.add('extension_panel');
+    hideHelperPanel.innerHTML = `
+        <h4>隐藏助手 (Hide Helper)</h4>
+        <div class="hide-helper-section inline-settings-item">
+            <div class="inline-setting">
+                 <label for="hide-last-n">隐藏最后N层之前的消息:</label>
+                 <input type="number" id="hide-last-n" min="0" placeholder="输入数字">
+            </div>
+             <div class="inline-setting inline-button">
+                <button id="hide-apply-btn" class="menu_button">应用</button>
+             </div>
+        </div>
+        <div class="inline-settings-item">
+             <p>当前聊天隐藏设置: <span id="current-chat-hide-setting-display">无</span></p>
+        </div>
+        <hr class="sysHR">
+    `;
+
+    const settingsContainer = document.getElementById('extensions_settings');
+    if (settingsContainer) {
+        settingsContainer.appendChild(hideHelperPanel);
+    } else {
+        console.warn('Hide Helper: Could not find #extensions_settings container. Appending to body.');
+        document.body.appendChild(hideHelperPanel);
+    }
+
     setupEventListeners();
 }
 
-// Setup event listeners for UI elements
-function setupEventListeners() {
-    // Last N hide input
-    const hideLastNInput = document.getElementById('hide-last-n');
-    hideLastNInput.value = extension_settings[extensionName].hideLastN || '';
-    hideLastNInput.addEventListener('input', (e) => {
-        const value = parseInt(e.target.value) || 0;
-        extension_settings[extensionName].hideLastN = value;
-        saveSettingsDebounced();
-    });
+function updateUIDisplay(settings) {
+    const currentSetting = settings?.hideLastN ?? 0;
+    const displaySpan = document.getElementById('current-chat-hide-setting-display');
+    const inputField = document.getElementById('hide-last-n');
 
-    // Apply button
-    document.getElementById('hide-apply-btn').addEventListener('click', applyHideSettings);
-
-    // Save settings button
-    document.getElementById('hide-save-settings-btn').addEventListener('click', saveCurrentSettings);
-
-    // Listen for new messages to reapply settings if needed
-    eventSource.on(event_types.MESSAGE_RECEIVED, () => {
-        if (extension_settings[extensionName].lastAppliedSettings) {
-            applyLastSettings();
-        }
-    });
+    if (displaySpan) {
+        displaySpan.textContent = currentSetting > 0 ? `${currentSetting}` : "无";
+    }
+    if (inputField) {
+        inputField.value = currentSetting > 0 ? currentSetting : '';
+    }
 }
 
-// Apply hide settings based on "hide last N" option
-async function applyHideSettings() {
+async function applyHideLogic(hideLastNValue) {
     const context = getContext();
-    const chatLength = context.chat?.length || 0;
+    const chat = context?.chat;
+    if (!chat || chat.length === 0) {
+        console.log("Hide Helper: No chat messages to apply hiding to.");
+        return;
+    }
 
-    if (chatLength === 0) return;
+    const chatLength = chat.length;
+    const numToHide = Math.max(0, hideLastNValue);
 
-    const hideLastN = extension_settings[extensionName].hideLastN || 0;
+    console.log(`Hide Helper: Applying setting - hideLastN = ${numToHide}. Chat length = ${chatLength}`);
 
-    if (hideLastN > 0 && hideLastN < chatLength) {
-        const visibleStart = chatLength - hideLastN;
-        // First unhide all messages
+    try {
         await hideChatMessageRange(0, chatLength - 1, true);
-        // Then hide the range we want to hide
-        await hideChatMessageRange(0, visibleStart - 1, false);
 
-        extension_settings[extensionName].lastAppliedSettings = {
-            type: 'lastN',
-            value: hideLastN
-        };
-        saveSettingsDebounced();
-    } else if (hideLastN === 0) {
-        // Unhide all messages
-        await hideChatMessageRange(0, chatLength - 1, true);
-        extension_settings[extensionName].lastAppliedSettings = null;
-        saveSettingsDebounced();
-    }
-}
-
-// Save current settings
-function saveCurrentSettings() {
-    const hideLastN = extension_settings[extensionName].hideLastN || 0;
-
-    if (hideLastN >= 0) {
-        applyHideSettings(); // Apply settings when saving
-    }
-
-    // Consider adding feedback if toastr is available
-    if (typeof toastr !== 'undefined') {
-         toastr.success('隐藏设置已保存并应用');
-    } else {
-         console.log('隐藏设置已保存并应用');
-    }
-}
-
-// Apply last saved settings
-async function applyLastSettings() {
-    const lastSettings = extension_settings[extensionName].lastAppliedSettings;
-
-    if (!lastSettings) return;
-
-    if (lastSettings.type === 'lastN') {
-        // Re-apply using the settings logic, ensures consistency
-        const currentHideLastN = extension_settings[extensionName].hideLastN;
-        if (currentHideLastN === lastSettings.value) { // Only re-apply if setting hasn't changed
-             await applyHideSettings();
+        if (numToHide > 0 && numToHide < chatLength) {
+            const visibleStartIndex = chatLength - numToHide;
+             console.log(`Hide Helper: Hiding messages from index 0 to ${visibleStartIndex - 1}`);
+            await hideChatMessageRange(0, visibleStartIndex - 1, false);
+        } else if (numToHide === 0) {
+             console.log(`Hide Helper: Unhiding all messages (hideLastN is 0).`);
+        } else if (numToHide >= chatLength) {
+             console.log(`Hide Helper: hideLastN (${numToHide}) >= chatLength (${chatLength}), keeping all visible.`);
         }
+    } catch (error) {
+        console.error("Hide Helper: Error applying hide/unhide:", error);
+        toastr.error("应用隐藏设置时出错。");
     }
 }
 
-// Initialize extension
+async function applyAndSaveHideSettings() {
+    const context = getContext();
+    if (!context || !context.chatId) {
+        toastr.warning("无法获取当前聊天信息。");
+        console.warn("Hide Helper: Cannot get current context or chatId.");
+        return;
+    }
+
+    const inputField = document.getElementById('hide-last-n');
+    const hideLastN = parseInt(inputField.value) || 0;
+
+    await applyHideLogic(hideLastN);
+
+    const currentMetadata = context.chatMetadata || {};
+    const newSettings = { hideLastN: hideLastN };
+
+    try {
+        await updateChatMetadata({ [metadataKey]: newSettings });
+        console.log(`Hide Helper: Saved settings to chat metadata:`, newSettings);
+        toastr.success(`隐藏设置 (${hideLastN > 0 ? hideLastN : '无'}) 已应用并保存到当前聊天。`);
+        updateUIDisplay(newSettings);
+    } catch (error) {
+        console.error("Hide Helper: Failed to save settings to chat metadata:", error);
+        toastr.error("保存隐藏设置到聊天元数据失败。");
+    }
+}
+
+const handleChatUpdate = debounce(async () => {
+    const context = getContext();
+    if (!context || !context.chatId) {
+        console.log("Hide Helper (handleChatUpdate): No active chat context.");
+        updateUIDisplay(defaultChatSettings);
+        return;
+    }
+
+    console.log("Hide Helper: CHAT_UPDATED event triggered for chat:", context.chatId);
+
+    const chatSettings = context.chatMetadata?.[metadataKey] ?? defaultChatSettings;
+
+    updateUIDisplay(chatSettings);
+
+    await applyHideLogic(chatSettings.hideLastN);
+
+}, 250);
+
+function setupEventListeners() {
+    const hideLastNInput = document.getElementById('hide-last-n');
+    const applyButton = document.getElementById('hide-apply-btn');
+
+    if (!hideLastNInput) {
+        console.error("Hide Helper: Could not find #hide-last-n input.");
+    }
+
+    if (applyButton) {
+        applyButton.addEventListener('click', applyAndSaveHideSettings);
+    } else {
+        console.error("Hide Helper: Could not find #hide-apply-btn button.");
+    }
+
+    eventSource.on(event_types.CHAT_UPDATED, handleChatUpdate);
+}
+
 jQuery(async () => {
+    console.log("Loading Hide Helper Extension...");
     loadSettings();
     createUI();
-
-    // Apply last settings if any
-    if (extension_settings[extensionName].lastAppliedSettings) {
-        // Delay might be needed if chat loads asynchronously
-        setTimeout(applyLastSettings, 1000);
-    }
+    setTimeout(handleChatUpdate, 500);
+    console.log("Hide Helper Extension Loaded.");
 });
