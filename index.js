@@ -20,10 +20,11 @@ function loadSettings() {
 // Create UI panel
 function createUI() {
     const hideHelperPanel = document.createElement('div');
-    hideHelperPanel.id = 'hide-helper-panel';
+    hideHelperPanel.id = 'hide-helper-panel'; // Keep the ID for potential specific targeting
+    hideHelperPanel.className = 'message-hider-panel'; // *** MODIFIED: Add class to match CSS ***
     hideHelperPanel.innerHTML = `
-        <h4>隐藏助手</h4>
-        <div class="hide-helper-section">
+        <h3>隐藏助手</h3> {/* *** MODIFIED: Changed h4 to h3 to match CSS *** */}
+        <div class="hide-helper-section"> {/* This class now matches the modified CSS rule */}
             <label for="hide-last-n">隐藏楼层:</label>
             <input type="number" id="hide-last-n" min="0" placeholder="隐藏最后N层之前的消息">
             <div class="hide-helper-buttons">
@@ -67,18 +68,18 @@ function setupEventListeners() {
 async function applyHideSettings() {
     const context = getContext();
     const chatLength = context.chat?.length || 0;
-    
+
     if (chatLength === 0) return;
-    
+
     const hideLastN = extension_settings[extensionName].hideLastN || 0;
-    
+
     if (hideLastN > 0 && hideLastN < chatLength) {
         const visibleStart = chatLength - hideLastN;
         // First unhide all messages
         await hideChatMessageRange(0, chatLength - 1, true);
         // Then hide the range we want to hide
         await hideChatMessageRange(0, visibleStart - 1, false);
-        
+
         extension_settings[extensionName].lastAppliedSettings = {
             type: 'lastN',
             value: hideLastN
@@ -95,22 +96,31 @@ async function applyHideSettings() {
 // Save current settings
 function saveCurrentSettings() {
     const hideLastN = extension_settings[extensionName].hideLastN || 0;
-    
+
     if (hideLastN >= 0) {
-        applyHideSettings();
+        applyHideSettings(); // Apply settings when saving
     }
-    
-    toastr.success('隐藏设置已保存并应用');
+
+    // Consider adding feedback if toastr is available
+    if (typeof toastr !== 'undefined') {
+         toastr.success('隐藏设置已保存并应用');
+    } else {
+         console.log('隐藏设置已保存并应用');
+    }
 }
 
 // Apply last saved settings
 async function applyLastSettings() {
     const lastSettings = extension_settings[extensionName].lastAppliedSettings;
-    
+
     if (!lastSettings) return;
-    
+
     if (lastSettings.type === 'lastN') {
-        await applyHideSettings();
+        // Re-apply using the settings logic, ensures consistency
+        const currentHideLastN = extension_settings[extensionName].hideLastN;
+        if (currentHideLastN === lastSettings.value) { // Only re-apply if setting hasn't changed
+             await applyHideSettings();
+        }
     }
 }
 
@@ -118,9 +128,10 @@ async function applyLastSettings() {
 jQuery(async () => {
     loadSettings();
     createUI();
-    
+
     // Apply last settings if any
     if (extension_settings[extensionName].lastAppliedSettings) {
-        setTimeout(applyLastSettings, 1000); // Slight delay to ensure chat is loaded
+        // Delay might be needed if chat loads asynchronously
+        setTimeout(applyLastSettings, 1000);
     }
 });
