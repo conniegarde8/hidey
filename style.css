@@ -1,9 +1,10 @@
-.message-hider-panel {
+.message-hider-panel { /* Matches the className added in JS */
     position: fixed;
     right: 10px;
     top: 200px;
     width: 150px;
-    height: 80px;
+    height: auto; /* Consider auto height unless fixed height is crucial */
+    max-height: 200px; /* Optional: Limit max height */
     background-color: #f0f0f0;
     border: 1px solid #ccc;
     padding: 10px;
@@ -12,27 +13,50 @@
     font-size: 12px;
 }
 
-.hide-floors, .regex-hide {
+/* *** MODIFIED: Added .hide-helper-section to apply margin *** */
+.hide-floors,
+.regex-hide,
+.hide-helper-section {
     margin-bottom: 5px;
 }
 
-h3 {
+/* Matches the h3 tag used in JS */
+.message-hider-panel h3 { /* Specificity increased slightly */
     margin: 0 0 5px 0;
     font-size: 14px;
 }
 
-input[type="number"], input[type="text"] {
+.message-hider-panel input[type="number"],
+.message-hider-panel input[type="text"] { /* Specificity increased slightly */
     width: 40px;
     margin: 2px 0;
     padding: 2px;
+    box-sizing: border-box; /* Good practice for consistent sizing */
 }
 
-button {
+/* Applies to all buttons within the panel */
+.message-hider-panel button { /* Specificity increased slightly */
     padding: 2px 5px;
     margin: 2px 0;
     font-size: 10px;
+    cursor: pointer; /* Add pointer cursor for better UX */
 }
 
-label {
+/* Styles the label within the panel */
+.message-hider-panel label { /* Specificity increased slightly */
     font-size: 10px;
+    display: inline-block; /* Ensures label and input align well */
+    margin-right: 5px; /* Add some space between label and input */
+}
+
+/* Optional: Style for the button container if needed */
+.hide-helper-buttons {
+    margin-top: 5px; /* Add some space above the button */
+}
+
+/* Optional: Style specifically for the save button if desired */
+#hide-save-settings-btn {
+    display: block; /* Make save button take full width */
+    width: 100%;
+    margin-top: 10px; /* Add more space above save button */
 }
